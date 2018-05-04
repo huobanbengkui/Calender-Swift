@@ -11,7 +11,7 @@ import UIKit
 class MyCalendarView: UIView {
     private let height = 50*IPHONE6SCALE;
     private let dateHeight = 270*IPHONE6SCALE;
-    private let viewHeight = 420*IPHONE6SCALE;
+    private let viewHeight = 470*IPHONE6SCALE;
     private var firstView:UIView!;
     private var secondView:UIView!;
     private var headLabel: UILabel!;
@@ -21,6 +21,7 @@ class MyCalendarView: UIView {
     private var endDateStr: String?;
     private var useDate = Date();
     var resultDate:((String?, String?) -> Void)?;
+    private let dateFormatter = DateFormatter();
     
     init(x:CGFloat?, y:CGFloat?) {
         super.init(frame: CGRect.zero);
@@ -33,6 +34,7 @@ class MyCalendarView: UIView {
             top = y!;
         }
         self.frame = CGRect.init(x: left, y: top, width: IPHONE_WIDTH, height: viewHeight);
+        dateFormatter.dateFormat = "yyyy-MM-dd";
         createCalendarView(date: useDate);
     }
     //MARK:-- 创建视图
@@ -57,21 +59,23 @@ class MyCalendarView: UIView {
         sureButton.addTarget(self, action: #selector(clickSureButton), for: .touchUpInside);
         titleView.addSubview(sureButton);
         
-//        let selectView:UIView = UIView();
-//        selectView.frame = CGRect.init(x: 0, y: titleView.frame.maxY, width: IPHONE_WIDTH, height: height);
-//        selectView.backgroundColor = CalendarHeader.RGBColor(r: 55, g: 143, b: 247, a: 1.0);
-//        self.addSubview(selectView);
-//        let selectArray: Array = ["昨天", "近7日", "近30日"];
-//        for i in 0..<selectArray.count {
-//            let number: CGFloat = CGFloat.init(i);
-//            let button:UIButton = createPrivateButton(title: selectArray[i], font: 14.0, color: nil, frame: CGRect.init(x: 105*IPHONE6SCALE + 55*number*IPHONE6SCALE, y: 0, width: 55*IPHONE6SCALE, height: height));
-//            button.layer.cornerRadius = 2.0;
-//            button.layer.masksToBounds = true;
-//            selectView.addSubview(button);
-//        }
+        let selectView:UIView = UIView();
+        selectView.frame = CGRect.init(x: 0, y: titleView.frame.maxY, width: IPHONE_WIDTH, height: height);
+        selectView.backgroundColor = CalendarHeader.RGBColor(r: 55, g: 143, b: 247, a: 1.0);
+        self.addSubview(selectView);
+        let selectArray: Array = ["昨天", "近7日", "近30日"];
+        for i in 0..<selectArray.count {
+            let number: CGFloat = CGFloat.init(i);
+            let button:UIButton = createPrivateButton(title: selectArray[i], font: 14.0, color: nil, frame: CGRect.init(x: 105*IPHONE6SCALE + 55*number*IPHONE6SCALE, y: 0, width: 55*IPHONE6SCALE, height: height));
+            button.tag = 1000 + i;
+            button.addTarget(self, action: #selector(clickSelectDateButton), for: .touchUpInside);
+            button.layer.cornerRadius = 2.0;
+            button.layer.masksToBounds = true;
+            selectView.addSubview(button);
+        }
         
         headLabel = UILabel();
-        headLabel.frame = CGRect.init(x: 0, y: titleView.frame.maxY - 1, width: IPHONE_WIDTH, height: height);
+        headLabel.frame = CGRect.init(x: 0, y: selectView.frame.maxY - 1, width: IPHONE_WIDTH, height: height);
         headLabel.font = UIFont.systemFont(ofSize: 14.0);
         headLabel.backgroundColor = CalendarHeader.RGBColor(r: 85, g: 161, b: 252, a: 1.0);
         headLabel.textAlignment = .center;
@@ -131,17 +135,14 @@ class MyCalendarView: UIView {
         baseView.backgroundColor = CalendarHeader.RGBColor(r: 255, g: 255, b: 255, a: 1.0);
         for i in 0..<42 {
             let x = CGFloat.init(i%7)*50*IPHONE6SCALE + 12.5*IPHONE6SCALE;
-            let y = CGFloat.init(i/7)*45*IPHONE6SCALE;
-            let viewBase = UIView();
-            viewBase.frame = CGRect.init(x: x, y: y, width: 50*IPHONE6SCALE, height: 45*IPHONE6SCALE);
-            baseView.addSubview(viewBase);
-            
-            let button:UIButton = createPrivateButton(title: nil, font: 12.0, color: nil, frame: CGRect.init(x: 0, y: 5*IPHONE6SCALE, width: 50*IPHONE6SCALE, height: 35*IPHONE6SCALE));
+            let y = CGFloat.init(i/7)*45*IPHONE6SCALE + 5*IPHONE6SCALE;
+//            为啥添加0.2 添加圆角以后，会导致产生部分空隙，原因未知：
+            let button:UIButton = createPrivateButton(title: nil, font: 12.0, color: nil, frame: CGRect.init(x: x, y: y, width: 50*IPHONE6SCALE + 0.2, height: 35*IPHONE6SCALE));
             button.tag = 100 + i;
             button.addTarget(self, action: #selector(clickDayButton), for: UIControlEvents.touchUpInside);
             button.titleLabel?.textAlignment = .center;
             setRadius(button: button, isAll: true, radious: 2.0);
-            viewBase.addSubview(button);
+            baseView.addSubview(button);
         }
         return baseView;
     }
@@ -265,10 +266,8 @@ class MyCalendarView: UIView {
         let daysInThisMonth = totalDaysInMonth(date: date);
         let firstWeekday = firstWeekDayIntThisMonth(date: date);
         let useDateMessage = getDayMonthAndYear(date: date);
-        let dateFormatter = DateFormatter();
-        dateFormatter.dateFormat = "MM dd, yyyy";
         let nowDate = getDayMonthAndYear(date: Date());
-        let zoneNowDate = dateFormatter.date(from: "\(nowDate.month) \(nowDate.day), \(nowDate.year)")
+        let zoneNowDate = dateFormatter.date(from: "\(nowDate.year)-\(nowDate.month)-\(nowDate.day)")
         var day = 0;
         for i in 0..<42 {
             let button = view.viewWithTag(100 + i) as! UIButton;
@@ -282,7 +281,7 @@ class MyCalendarView: UIView {
                 button.setTitle("\(day)", for: .normal);
                 
                 //已经过去的日子可以点击
-                let zoneDate = dateFormatter.date(from: "\(useDateMessage.month) \(day), \(useDateMessage.year)");
+                let zoneDate = dateFormatter.date(from: "\(useDateMessage.year)-\(useDateMessage.month)-\(day)");
                 if zoneDate! <= zoneNowDate!{
                     button.isEnabled = true;
                     button.setTitleColor(CalendarHeader.RGBColor(r: 0, g: 0, b: 0, a: 1.0), for: .normal);
@@ -346,15 +345,13 @@ class MyCalendarView: UIView {
             setBackgroundColorOnButton(view: nil);
         }else{
             if startDateStr == nil{
-                startDateStr = "\(dateM.month) \(selectDay), \(dateM.year)";
+                startDateStr = "\(dateM.year)-\(dateM.month)-\(selectDay)";
                 button.backgroundColor = CalendarHeader.RGBColor(r: 205, g: 209, b: 225, a: 1.0);
             }else{
-                endDateStr = "\(dateM.month) \(selectDay), \(dateM.year)";
+                endDateStr = "\(dateM.year)-\(dateM.month)-\(selectDay)";
             }
             if startDateStr != nil && endDateStr != nil{
                 //如果两个参数都有，先判断大小，然后刷新UI
-                let dateFormatter = DateFormatter();
-                dateFormatter.dateFormat = "MM dd, yyyy";
                 if dateFormatter.date(from: startDateStr!)! > dateFormatter.date(from: endDateStr!)!{
                     let midDateStr = startDateStr;
                     startDateStr = endDateStr;
@@ -372,10 +369,8 @@ class MyCalendarView: UIView {
             useView = view!;
         }
         let useDateMessage = getDayMonthAndYear(date: useDate);
-        let dateFormatter = DateFormatter();
-        dateFormatter.dateFormat = "MM dd, yyyy";
         let nowDate = getDayMonthAndYear(date: Date());
-        let zoneNowDate = dateFormatter.date(from: "\(nowDate.month) \(nowDate.day), \(nowDate.year)");
+        let zoneNowDate = dateFormatter.date(from: "\(nowDate.year)-\(nowDate.month)-\(nowDate.day)");
         var startDate: Date?;
         var endDate: Date?;
         var zoneDate: Date?;
@@ -388,7 +383,7 @@ class MyCalendarView: UIView {
             if startDateStr == nil || endDateStr == nil{
                 setRadius(button: button, isAll: true, radious: 2.0);
                 button.backgroundColor = CalendarHeader.RGBColor(r: 255, g: 255, b: 255, a: 1.0);
-                zoneDate = dateFormatter.date(from: "\(useDateMessage.month) \(selectDay), \(useDateMessage.year)");
+                zoneDate = dateFormatter.date(from: "\(useDateMessage.year)-\(useDateMessage.month)-\(selectDay)");
                 if zoneDate! == zoneNowDate! {
                     button.backgroundColor = CalendarHeader.RGBColor(r: 232, g: 121, b: 124, a: 1.0)
                 }
@@ -397,7 +392,7 @@ class MyCalendarView: UIView {
                     startDate = dateFormatter.date(from: startDateStr!);
                     endDate = dateFormatter.date(from: endDateStr!);
                 }
-                zoneDate = dateFormatter.date(from: "\(useDateMessage.month) \(selectDay), \(useDateMessage.year)");
+                zoneDate = dateFormatter.date(from: "\(useDateMessage.year)-\(useDateMessage.month)-\(selectDay)");
                 if zoneDate! > startDate! && zoneDate! < endDate!{
                     setRadius(button: button, isAll: true, radious: 0.0);
                     button.backgroundColor = CalendarHeader.RGBColor(r: 205, g: 209, b: 225, a: 1.0);
@@ -464,13 +459,41 @@ class MyCalendarView: UIView {
         button.layer.mask = maskLayer;
     }
     
+    //MARK:-- 获取最近时间
+    @objc private func clickSelectDateButton(button: UIButton){
+        let tag = button.tag - 1000;
+        switch tag {
+        case 0:
+            //昨天
+            getLastNumberDate(dateLength: 1);
+        case 1:
+            //过去7日
+            getLastNumberDate(dateLength: 7);
+        case 2:
+            //过去30日
+            getLastNumberDate(dateLength: 30);
+        default:
+            break;
+        }
+    }
+    private func getLastNumberDate(dateLength: Int){
+        let lastDate = Date(timeIntervalSinceNow: -24*60*60);
+        let pastDate = Date(timeIntervalSinceNow: TimeInterval(-24*60*60*dateLength));
+        startDateStr = dateFormatter.string(from: pastDate);
+        endDateStr = dateFormatter.string(from: lastDate);
+        if resultDate != nil{
+            resultDate!(startDateStr, endDateStr);
+        }
+        self.removeFromSuperview();
+    }
+    
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    deinit {
-        print("页面被释放");
-    }
+//    deinit {
+//        print("页面被释放");
+//    }
     /*
     1，在 Swift 中, 类的初始化器有两种, 分别是Designated Initializer（指定初始化器）和Convenience Initializer（便利初始化器）
     2，如果子类没有定义任何的指定初始化器, 那么会默认继承所有来自父类的指定初始化器。
